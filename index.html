@@ -1,902 +1,1059 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Polynomial Regression Visualizer</title>
-<style>
-  :root{
-    --bg: #08090d;
-    --panel: #12141b;
-    --panel-2: #171a23;
-    --border: #262a37;
-    --text: #e7e9ee;
-    --text-dim: #9aa0b0;
-    --accent: #4fd1c5;
-    --accent-2: #b794f6;
-    --danger: #f56565;
-    --grid-line: #23262f;
-    --shadow: 0 8px 24px rgba(0,0,0,0.45);
-  }
-  *{ box-sizing: border-box; }
-  html, body{
-    margin:0; padding:0; min-height:100%;
-    background: radial-gradient(circle at 20% 10%, #0d0f16 0%, #08090d 55%, #060709 100%);
-    color: var(--text);
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-  #app{
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polynomial Regression Visualizer</title>
 
-  /* ---------- Header ---------- */
-  header{
-    padding: 20px 32px;
-    background: linear-gradient(180deg, #0f1118 0%, #0a0b10 100%);
-    border-bottom: 1px solid var(--border);
-  }
-  header h1{
-    margin:0 0 6px 0;
-    font-size: 1.5rem;
-    letter-spacing: 0.3px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  header p{
-    margin:0;
-    color: var(--text-dim);
-    font-size: 0.92rem;
-    max-width: 980px;
-    line-height:1.5;
-  }
-  header code{
-    background:#1b1e28; padding:1px 6px; border-radius:4px; color:var(--accent);
-    font-size:0.88em;
-  }
+  <script>
+    const members = [
+      "66010118",
+      "66010452",
+      "66010737",
+      "66010808",
+      "66010911",
+      "66011365"
+    ]
+  </script>
 
-  /* ---------- Body Grid ---------- */
-  main{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-    gap: 22px;
-    padding: 22px 32px;
-  }
-  .col{
-    display:flex;
-    flex-direction:column;
-    gap: 22px;
-  }
-  .panel{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
-  .panel-head{
-    padding: 16px 22px;
-    border-bottom: 1px solid var(--border);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-shrink:0;
-  }
-  .panel-head h2{
-    margin:0;
-    font-size: 1.12rem;
-    color: var(--text);
-    font-weight:600;
-  }
-  .panel-head span.tag{
-    font-size:0.76rem;
-    color: var(--text-dim);
-    background: var(--panel-2);
-    border:1px solid var(--border);
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
-  .panel-body{
-    padding: 20px 22px 22px 22px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 78vh;
-  }
-  /* independent, styled scrollbars */
-  .panel-body::-webkit-scrollbar{ width:9px; }
-  .panel-body::-webkit-scrollbar-track{ background: transparent; }
-  .panel-body::-webkit-scrollbar-thumb{ background: #2a2e3a; border-radius: 8px; }
-  .panel-body::-webkit-scrollbar-thumb:hover{ background: #3a3f4f; }
-  .panel-body{ scrollbar-width: thin; scrollbar-color: #2a2e3a transparent; }
+  <style>
+    :root {
+      --bg: #08090d;
+      --panel: #12141b;
+      --panel-2: #171a23;
+      --border: #262a37;
+      --text: #e7e9ee;
+      --text-dim: #9aa0b0;
+      --accent: #4fd1c5;
+      --accent-2: #b794f6;
+      --danger: #f56565;
+      --grid-line: #23262f;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
 
-  /* ---------- Footer ---------- */
-  footer{
-    padding: 12px 32px;
-    background: #0a0b10;
-    border-top: 1px solid var(--border);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:6px;
-    color: var(--text-dim);
-    font-size: 0.82rem;
-  }
-  footer strong{ color: var(--text); }
+    * {
+      box-sizing: border-box;
+    }
 
-  /* ---------- Controls ---------- */
-  .hint{
-    color: var(--text-dim);
-    font-size: 0.82rem;
-    margin: 4px 0 18px 0;
-    line-height:1.5;
-  }
-  .row{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin-bottom: 12px;
-  }
-  .row label{
-    flex: 0 0 148px;
-    font-size:0.86rem;
-    color: var(--text-dim);
-  }
-  .row input[type=range]{
-    flex:1;
-    accent-color: var(--accent);
-  }
-  .row .val{
-    flex: 0 0 60px;
-    text-align:right;
-    font-variant-numeric: tabular-nums;
-    font-size:0.86rem;
-    color: var(--accent);
-  }
-  .btn-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin: 18px 0 6px 0;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-  button{
-    border:1px solid var(--border);
-    background: var(--panel-2);
-    color: var(--text);
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor:pointer;
-    font-size: 0.84rem;
-    transition: transform 0.05s ease, border-color 0.15s ease, background 0.15s ease;
-  }
-  button:hover{ border-color: var(--accent); background:#1c2029; }
-  button:active{ transform: scale(0.97); }
-  button.primary{
-    background: linear-gradient(135deg, var(--accent), #2fb6a8);
-    color:#04211d;
-    border:none;
-    font-weight:600;
-  }
-  button.primary:hover{ filter:brightness(1.08); }
-  button.accent2{
-    background: linear-gradient(135deg, var(--accent-2), #8a5cd9);
-    color:#1c0f33;
-    border:none;
-    font-weight:600;
-  }
-  button.ghost{ background:transparent; }
-  button.danger{ color: var(--danger); border-color:#4a2626; }
-  button:disabled{ opacity:0.45; cursor:not-allowed; }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at 20% 10%, #0d0f16 0%, #08090d 55%, #060709 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
 
-  canvas{ display:block; width:100%; }
-  #dataCanvas, #lossCanvas{
-    background: #0b0c12;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-  .canvas-tools{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:8px;
-    font-size:0.78rem;
-    color: var(--text-dim);
-  }
+    #app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-  /* ---------- Model state ---------- */
-  .stat-grid{
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap:14px;
-    margin-bottom: 22px;
-  }
-  .stat{
-    background: var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding: 14px 16px;
-  }
-  .stat .label{ font-size:0.74rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; }
-  .stat .value{ font-size:1.4rem; font-weight:700; color: var(--accent); font-variant-numeric: tabular-nums; }
+    /* ---------- Header ---------- */
+    header {
+      padding: 20px 32px;
+      background: linear-gradient(180deg, #0f1118 0%, #0a0b10 100%);
+      border-bottom: 1px solid var(--border);
+    }
 
-  .equation-box{
-    background:#0b0c12;
-    border:1px dashed var(--border);
-    border-radius:10px;
-    padding: 16px 18px;
-    margin-bottom:22px;
-    font-family: "Cambria Math", Cambria, Georgia, serif;
-    font-size: 1.15rem;
-    color: var(--accent-2);
-    overflow-x:auto;
-    white-space:nowrap;
-  }
+    header h1 {
+      margin: 0 0 6px 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
 
-  table{
-    border-collapse: collapse;
-    width:100%;
-    font-size:0.86rem;
-    margin-bottom:22px;
-  }
-  th, td{
-    border:1px solid var(--border);
-    padding: 8px 10px;
-    text-align:center;
-    font-variant-numeric: tabular-nums;
-  }
-  th{ background: var(--panel-2); color: var(--text-dim); font-weight:600; }
-  td.bias-col, th.bias-col{ color: var(--accent); }
+    header p {
+      margin: 0;
+      color: var(--text-dim);
+      font-size: 0.92rem;
+      max-width: 980px;
+      line-height: 1.5;
+    }
 
-  .section-title{
-    font-size:0.84rem;
-    color: var(--text-dim);
-    text-transform:uppercase;
-    letter-spacing:0.5px;
-    margin: 4px 0 12px 0;
-    border-left: 3px solid var(--accent);
-    padding-left: 10px;
-  }
+    header code {
+      background: #1b1e28;
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.88em;
+    }
 
-  .formula{
-    background:#0b0c12;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding: 14px 16px;
-    font-family: "Cambria Math", Cambria, Georgia, serif;
-    font-size:1rem;
-    line-height:1.9;
-    color:var(--text);
-    margin: 6px 0 12px 0;
-  }
+    /* ---------- Body Grid ---------- */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 22px;
+      padding: 22px 32px;
+    }
 
-  @media (max-width: 900px){
-    main{ grid-template-columns: 1fr; padding: 18px 18px; }
-    .panel-body{ max-height: none; }
-  }
-</style>
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 1.12rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .panel-head span.tag {
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .panel-body {
+      padding: 20px 22px 22px 22px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      max-height: 78vh;
+    }
+
+    /* independent, styled scrollbars */
+    .panel-body::-webkit-scrollbar {
+      width: 9px;
+    }
+
+    .panel-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .panel-body::-webkit-scrollbar-thumb {
+      background: #2a2e3a;
+      border-radius: 8px;
+    }
+
+    .panel-body::-webkit-scrollbar-thumb:hover {
+      background: #3a3f4f;
+    }
+
+    .panel-body {
+      scrollbar-width: thin;
+      scrollbar-color: #2a2e3a transparent;
+    }
+
+    /* ---------- Footer ---------- */
+    footer {
+      padding: 12px 32px;
+      background: #0a0b10;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+
+    footer strong {
+      color: var(--text);
+    }
+
+    /* ---------- Controls ---------- */
+    .hint {
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      margin: 4px 0 18px 0;
+      line-height: 1.5;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .row label {
+      flex: 0 0 148px;
+      font-size: 0.86rem;
+      color: var(--text-dim);
+    }
+
+    .row input[type=range] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    .row .val {
+      flex: 0 0 60px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      color: var(--accent);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 6px 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      transition: transform 0.05s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      background: #1c2029;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), #2fb6a8);
+      color: #04211d;
+      border: none;
+      font-weight: 600;
+    }
+
+    button.primary:hover {
+      filter: brightness(1.08);
+    }
+
+    button.accent2 {
+      background: linear-gradient(135deg, var(--accent-2), #8a5cd9);
+      color: #1c0f33;
+      border: none;
+      font-weight: 600;
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    button.danger {
+      color: var(--danger);
+      border-color: #4a2626;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+    }
+
+    #dataCanvas,
+    #lossCanvas {
+      background: #0b0c12;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .canvas-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    /* ---------- Model state ---------- */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .stat .label {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .equation-box {
+      background: #0b0c12;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      font-family: "Cambria Math", Cambria, Georgia, serif;
+      font-size: 1.15rem;
+      color: var(--accent-2);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.86rem;
+      margin-bottom: 22px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th {
+      background: var(--panel-2);
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    td.bias-col,
+    th.bias-col {
+      color: var(--accent);
+    }
+
+    .section-title {
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 4px 0 12px 0;
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+
+    .formula {
+      background: #0b0c12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: "Cambria Math", Cambria, Georgia, serif;
+      font-size: 1rem;
+      line-height: 1.9;
+      color: var(--text);
+      margin: 6px 0 12px 0;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 18px 18px;
+      }
+
+      .panel-body {
+        max-height: none;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div id="app">
+  <div id="app">
 
-  <header>
-    <h1>Polynomial Regression — Step by Step</h1>
-    <p>
-      Polynomial Regression fits a curve <code>y ≈ w₀ + w₁x + w₂x² + ... + w<sub>d</sub>x<sup>d</sup></code> to data by
-      treating powers of <code>x</code> as extra input features, then using <strong>Gradient Descent</strong> to nudge the
-      weights <code>w</code> a little bit at a time so the average squared error between predictions and real points keeps shrinking.
-      Add or randomize points on the left, then press <strong>Step</strong> to watch one update happen, or <strong>Play</strong> to watch it converge.
-    </p>
-  </header>
+    <header>
+      <h1>Polynomial Regression — Step by Step</h1>
+      <p>
+        Polynomial Regression fits a curve <code>y ≈ w₀ + w₁x + w₂x² + ... + w<sub>d</sub>x<sup>d</sup></code> to data
+        by
+        treating powers of <code>x</code> as extra input features, then using <strong>Gradient Descent</strong> to nudge
+        the
+        weights <code>w</code> a little bit at a time so the average squared error between predictions and real points
+        keeps shrinking.
+        Add or randomize points on the left, then press <strong>Step</strong> to watch one update happen, or
+        <strong>Play</strong> to watch it converge.
+      </p>
+    </header>
 
-  <main>
-    <!-- LEFT COLUMN -->
-    <div class="col">
-      <!-- LEFT TOP: Data Canvas -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Data Canvas / Input</h2>
-          <span class="tag" id="pointCountTag">0 points</span>
+    <main>
+      <!-- LEFT COLUMN -->
+      <div class="col">
+        <!-- LEFT TOP: Data Canvas -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Data Canvas / Input</h2>
+            <span class="tag" id="pointCountTag">0 points</span>
+          </div>
+          <div class="panel-body">
+            <div class="canvas-tools">
+              <span>Click empty space to add a point · click near a point to remove it</span>
+            </div>
+            <canvas id="dataCanvas" width="560" height="380"></canvas>
+            <div class="btn-row">
+              <button class="primary" id="btnRandom">🎲 Randomize Data</button>
+              <button class="danger" id="btnClear">🗑 Clear Points</button>
+            </div>
+            <p class="hint">Domain shown: x ∈ [-5, 5], y ∈ [-5, 5]. The dashed curve is the model's current prediction —
+              watch it bend toward the points as training progresses.</p>
+          </div>
+        </section>
+
+        <!-- LEFT BOTTOM: Hyperparameters & Controls -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Hyperparameters &amp; Controls</h2>
+            <span class="tag" id="statusTag">Idle</span>
+          </div>
+          <div class="panel-body">
+            <div class="section-title">Model Capacity</div>
+            <div class="row">
+              <label for="degree">Degree (d)</label>
+              <input type="range" id="degree" min="1" max="8" step="1" value="3" />
+              <span class="val" id="degreeVal">3</span>
+            </div>
+            <p class="hint">Higher degree = more bendy curve = more weights to learn. Too high can overfit noisy points.
+            </p>
+
+            <div class="section-title">Gradient Descent</div>
+            <div class="row">
+              <label for="lr">Learning rate (α)</label>
+              <input type="range" id="lr" min="-3" max="0" step="0.01" value="-1" />
+              <span class="val" id="lrVal">0.100</span>
+            </div>
+            <p class="hint">How big each weight update step is. Too large can overshoot and diverge; too small converges
+              slowly.</p>
+
+            <div class="row">
+              <label for="epochsPerStep">Speed (epochs/tick)</label>
+              <input type="range" id="epochsPerStep" min="1" max="50" step="1" value="5" />
+              <span class="val" id="epochsPerStepVal">5</span>
+            </div>
+            <p class="hint">During "Play", how many epochs run per animation tick — higher feels faster.</p>
+
+            <div class="row">
+              <label for="convThresh">Converge ε</label>
+              <input type="range" id="convThresh" min="-8" max="-3" step="0.1" value="-6" />
+              <span class="val" id="convThreshVal">1e-6</span>
+            </div>
+            <p class="hint">"Play" stops automatically once the loss change between epochs drops below this value (or
+              max epochs is hit).</p>
+
+            <div class="row">
+              <label for="maxEpochs">Max epochs</label>
+              <input type="range" id="maxEpochs" min="100" max="5000" step="100" value="2000" />
+              <span class="val" id="maxEpochsVal">2000</span>
+            </div>
+
+            <div class="btn-row">
+              <button class="primary" id="btnStep">⏭ Step (1 epoch)</button>
+              <button class="accent2" id="btnPlay">▶ Play until Convergence</button>
+              <button class="ghost" id="btnReset">↺ Reset Weights</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="col">
+        <!-- RIGHT TOP: Model State -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Model State / Structure</h2>
+            <span class="tag" id="epochTag">Epoch 0</span>
+          </div>
+          <div class="panel-body">
+            <div class="stat-grid">
+              <div class="stat">
+                <div class="label">Epoch</div>
+                <div class="value" id="statEpoch">0</div>
+              </div>
+              <div class="stat">
+                <div class="label">Loss (MSE/2)</div>
+                <div class="value" id="statLoss">–</div>
+              </div>
+              <div class="stat">
+                <div class="label">Δ Loss</div>
+                <div class="value" id="statDelta">–</div>
+              </div>
+            </div>
+
+            <div class="section-title">Current Model Equation</div>
+            <div class="equation-box" id="equationBox">ŷ = w₀</div>
+
+            <div class="section-title">Weight Vector (w)</div>
+            <table id="weightTable">
+              <thead>
+                <tr>
+                  <th>Weight</th>
+                  <th>Feature</th>
+                  <th>Value</th>
+                  <th>Gradient</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <div class="section-title">Standardized Feature Matrix X (preview)</div>
+            <p class="hint">Each raw x is expanded into powers x¹…x<sup>d</sup>, then standardized (mean 0, std 1)
+              before training — this keeps gradients well-scaled even for high degrees.</p>
+            <div style="overflow-x:auto;">
+              <table id="featureTable">
+                <thead></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="section-title">Update Rule</div>
+            <div class="formula">
+              Cost:&nbsp; J(w) = (1 / 2n) · Σᵢ (ŷᵢ − yᵢ)²<br />
+              Gradient:&nbsp; ∂J/∂w<sub>j</sub> = (1 / n) · Σᵢ (ŷᵢ − yᵢ) · x<sub>ij</sub><br />
+              Update:&nbsp; w<sub>j</sub> ← w<sub>j</sub> − α · ∂J/∂w<sub>j</sub>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT BOTTOM: Loss Graph -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Loss Graph</h2>
+            <span class="tag" id="lossTag">no training yet</span>
+          </div>
+          <div class="panel-body">
+            <canvas id="lossCanvas" width="560" height="320"></canvas>
+            <p class="hint">Loss should trend downward and flatten out as the model converges. A flat line near zero
+              improvement means it's time to stop.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <div>
+        <div> <strong> Members </strong> —
+          <span id="memberList"></span>
         </div>
-        <div class="panel-body">
-          <div class="canvas-tools">
-            <span>Click empty space to add a point · click near a point to remove it</span>
-          </div>
-          <canvas id="dataCanvas" width="560" height="380"></canvas>
-          <div class="btn-row">
-            <button class="primary" id="btnRandom">🎲 Randomize Data</button>
-            <button class="danger" id="btnClear">🗑 Clear Points</button>
-          </div>
-          <p class="hint">Domain shown: x ∈ [-5, 5], y ∈ [-5, 5]. The dashed curve is the model's current prediction — watch it bend toward the points as training progresses.</p>
-        </div>
-      </section>
 
-      <!-- LEFT BOTTOM: Hyperparameters & Controls -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Hyperparameters &amp; Controls</h2>
-          <span class="tag" id="statusTag">Idle</span>
-        </div>
-        <div class="panel-body">
-          <div class="section-title">Model Capacity</div>
-          <div class="row">
-            <label for="degree">Degree (d)</label>
-            <input type="range" id="degree" min="1" max="8" step="1" value="3" />
-            <span class="val" id="degreeVal">3</span>
-          </div>
-          <p class="hint">Higher degree = more bendy curve = more weights to learn. Too high can overfit noisy points.</p>
+      </div>
+      <div><strong>CE KMITL</strong> — Department of Computer Engineering</div>
+    </footer>
 
-          <div class="section-title">Gradient Descent</div>
-          <div class="row">
-            <label for="lr">Learning rate (α)</label>
-            <input type="range" id="lr" min="-3" max="0" step="0.01" value="-1" />
-            <span class="val" id="lrVal">0.100</span>
-          </div>
-          <p class="hint">How big each weight update step is. Too large can overshoot and diverge; too small converges slowly.</p>
+  </div>
 
-          <div class="row">
-            <label for="epochsPerStep">Speed (epochs/tick)</label>
-            <input type="range" id="epochsPerStep" min="1" max="50" step="1" value="5" />
-            <span class="val" id="epochsPerStepVal">5</span>
-          </div>
-          <p class="hint">During "Play", how many epochs run per animation tick — higher feels faster.</p>
+  <script>
+      (function () {
+        "use strict";
 
-          <div class="row">
-            <label for="convThresh">Converge ε</label>
-            <input type="range" id="convThresh" min="-8" max="-3" step="0.1" value="-6" />
-            <span class="val" id="convThreshVal">1e-6</span>
-          </div>
-          <p class="hint">"Play" stops automatically once the loss change between epochs drops below this value (or max epochs is hit).</p>
+        // ---------------------------------------------------------------------
+        // Domain / constants
+        // ---------------------------------------------------------------------
+        const X_MIN = -5, X_MAX = 5, Y_MIN = -5, Y_MAX = 5;
+        const CLICK_REMOVE_PX = 12;
 
-          <div class="row">
-            <label for="maxEpochs">Max epochs</label>
-            <input type="range" id="maxEpochs" min="100" max="5000" step="100" value="2000" />
-            <span class="val" id="maxEpochsVal">2000</span>
-          </div>
+        const state = {
+          points: [],          // {x, y} in data space
+          degree: 3,
+          learningRate: 0.1,
+          epochsPerTick: 5,
+          convThreshold: 1e-6,
+          maxEpochs: 2000,
+          weights: [],          // length degree+1 ([w0, w1, ..., wd])
+          featMean: [],          // length degree (for x^1..x^d)
+          featStd: [],
+          epoch: 0,
+          lastLoss: null,
+          lastDelta: null,
+          lossHistory: [],
+          lastGrad: [],
+          isPlaying: false,
+          timer: null
+        };
 
-          <div class="btn-row">
-            <button class="primary" id="btnStep">⏭ Step (1 epoch)</button>
-            <button class="accent2" id="btnPlay">▶ Play until Convergence</button>
-            <button class="ghost" id="btnReset">↺ Reset Weights</button>
-          </div>
-        </div>
-      </section>
-    </div>
+        // ---------------------------------------------------------------------
+        // DOM refs
+        // ---------------------------------------------------------------------
+        const dataCanvas = document.getElementById('dataCanvas');
+        const dctx = dataCanvas.getContext('2d');
+        const lossCanvas = document.getElementById('lossCanvas');
+        const lctx = lossCanvas.getContext('2d');
 
-    <!-- RIGHT COLUMN -->
-    <div class="col">
-      <!-- RIGHT TOP: Model State -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Model State / Structure</h2>
-          <span class="tag" id="epochTag">Epoch 0</span>
-        </div>
-        <div class="panel-body">
-          <div class="stat-grid">
-            <div class="stat"><div class="label">Epoch</div><div class="value" id="statEpoch">0</div></div>
-            <div class="stat"><div class="label">Loss (MSE/2)</div><div class="value" id="statLoss">–</div></div>
-            <div class="stat"><div class="label">Δ Loss</div><div class="value" id="statDelta">–</div></div>
-          </div>
+        const el = id => document.getElementById(id);
+        const degreeInput = el('degree'), degreeVal = el('degreeVal');
+        const lrInput = el('lr'), lrVal = el('lrVal');
+        const epochsPerStepInput = el('epochsPerStep'), epochsPerStepVal = el('epochsPerStepVal');
+        const convThreshInput = el('convThresh'), convThreshVal = el('convThreshVal');
+        const maxEpochsInput = el('maxEpochs'), maxEpochsVal = el('maxEpochsVal');
 
-          <div class="section-title">Current Model Equation</div>
-          <div class="equation-box" id="equationBox">ŷ = w₀</div>
+        const btnRandom = el('btnRandom'), btnClear = el('btnClear');
+        const btnStep = el('btnStep'), btnPlay = el('btnPlay'), btnReset = el('btnReset');
 
-          <div class="section-title">Weight Vector (w)</div>
-          <table id="weightTable">
-            <thead><tr><th>Weight</th><th>Feature</th><th>Value</th><th>Gradient</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        const pointCountTag = el('pointCountTag'), statusTag = el('statusTag'), epochTag = el('epochTag'), lossTag = el('lossTag');
+        const statEpoch = el('statEpoch'), statLoss = el('statLoss'), statDelta = el('statDelta');
+        const equationBox = el('equationBox');
+        const weightTableBody = document.querySelector('#weightTable tbody');
+        const featureTable = el('featureTable');
+        const memberList = el('memberList');
+        memberList.innerHTML = members.map(member => member).join(', ');
 
-          <div class="section-title">Standardized Feature Matrix X (preview)</div>
-          <p class="hint">Each raw x is expanded into powers x¹…x<sup>d</sup>, then standardized (mean 0, std 1) before training — this keeps gradients well-scaled even for high degrees.</p>
-          <div style="overflow-x:auto;">
-            <table id="featureTable"><thead></thead><tbody></tbody></table>
-          </div>
+        // ---------------------------------------------------------------------
+        // Coordinate mapping: data space <-> canvas pixel space
+        // ---------------------------------------------------------------------
+        function dataToPx(x, y) {
+          const w = dataCanvas.width, h = dataCanvas.height;
+          const px = (x - X_MIN) / (X_MAX - X_MIN) * w;
+          const py = h - (y - Y_MIN) / (Y_MAX - Y_MIN) * h;
+          return [px, py];
+        }
+        function pxToData(px, py) {
+          const w = dataCanvas.width, h = dataCanvas.height;
+          const x = X_MIN + (px / w) * (X_MAX - X_MIN);
+          const y = Y_MIN + ((h - py) / h) * (Y_MAX - Y_MIN);
+          return [x, y];
+        }
 
-          <div class="section-title">Update Rule</div>
-          <div class="formula">
-            Cost:&nbsp; J(w) = (1 / 2n) · Σᵢ (ŷᵢ − yᵢ)²<br/>
-            Gradient:&nbsp; ∂J/∂w<sub>j</sub> = (1 / n) · Σᵢ (ŷᵢ − yᵢ) · x<sub>ij</sub><br/>
-            Update:&nbsp; w<sub>j</sub> ← w<sub>j</sub> − α · ∂J/∂w<sub>j</sub>
-          </div>
-        </div>
-      </section>
+        // ---------------------------------------------------------------------
+        // Feature engineering: raw x -> standardized polynomial features
+        // ---------------------------------------------------------------------
+        function rawPolyFeatures(x, degree) {
+          // returns [x^1, x^2, ..., x^degree]
+          const f = new Array(degree);
+          let p = 1;
+          for (let j = 1; j <= degree; j++) { p *= x; f[j - 1] = p; }
+          return f;
+        }
 
-      <!-- RIGHT BOTTOM: Loss Graph -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Loss Graph</h2>
-          <span class="tag" id="lossTag">no training yet</span>
-        </div>
-        <div class="panel-body">
-          <canvas id="lossCanvas" width="560" height="320"></canvas>
-          <p class="hint">Loss should trend downward and flatten out as the model converges. A flat line near zero improvement means it's time to stop.</p>
-        </div>
-      </section>
-    </div>
-  </main>
+        function recomputeFeatureStats() {
+          const d = state.degree;
+          const n = state.points.length;
+          state.featMean = new Array(d).fill(0);
+          state.featStd = new Array(d).fill(1);
+          if (n === 0) return;
+          const cols = new Array(d).fill(0).map(() => []);
+          for (const p of state.points) {
+            const f = rawPolyFeatures(p.x, d);
+            for (let j = 0; j < d; j++) cols[j].push(f[j]);
+          }
+          for (let j = 0; j < d; j++) {
+            const mean = cols[j].reduce((a, b) => a + b, 0) / n;
+            const variance = cols[j].reduce((a, b) => a + (b - mean) * (b - mean), 0) / n;
+            let std = Math.sqrt(variance);
+            if (std < 1e-8) std = 1;
+            state.featMean[j] = mean;
+            state.featStd[j] = std;
+          }
+        }
 
-  <footer>
-    <div>Group Members: <strong>Member 1</strong> · <strong>Member 2</strong> · <strong>Member 3</strong> · <strong>Member 4</strong></div>
-    <div><strong>CE KMITL</strong> — Department of Computer Engineering</div>
-  </footer>
+        function standardizedFeatures(x) {
+          // returns array length d of standardized x^1..x^d
+          const raw = rawPolyFeatures(x, state.degree);
+          const out = new Array(state.degree);
+          for (let j = 0; j < state.degree; j++) {
+            out[j] = (raw[j] - state.featMean[j]) / state.featStd[j];
+          }
+          return out;
+        }
 
-</div>
+        function predict(x) {
+          const feats = standardizedFeatures(x);
+          let y = state.weights[0];
+          for (let j = 0; j < feats.length; j++) y += state.weights[j + 1] * feats[j];
+          return y;
+        }
 
-<script>
-(function(){
-  "use strict";
+        // ---------------------------------------------------------------------
+        // Training: batch gradient descent, one epoch
+        // ---------------------------------------------------------------------
+        function resetTraining() {
+          stopPlaying();
+          recomputeFeatureStats();
+          state.weights = new Array(state.degree + 1).fill(0);
+          state.lastGrad = new Array(state.degree + 1).fill(0);
+          state.epoch = 0;
+          state.lastLoss = null;
+          state.lastDelta = null;
+          state.lossHistory = [];
+          updateStatus('Idle');
+          renderAll();
+        }
 
-  // ---------------------------------------------------------------------
-  // Domain / constants
-  // ---------------------------------------------------------------------
-  const X_MIN = -5, X_MAX = 5, Y_MIN = -5, Y_MAX = 5;
-  const CLICK_REMOVE_PX = 12;
+        function trainEpoch() {
+          const n = state.points.length;
+          if (n === 0) return false;
+          const d = state.degree;
+          const grad = new Array(d + 1).fill(0);
+          let sqErrSum = 0;
+          for (const p of state.points) {
+            const feats = standardizedFeatures(p.x);
+            let yhat = state.weights[0];
+            for (let j = 0; j < d; j++) yhat += state.weights[j + 1] * feats[j];
+            const err = yhat - p.y;
+            sqErrSum += err * err;
+            grad[0] += err;
+            for (let j = 0; j < d; j++) grad[j + 1] += err * feats[j];
+          }
+          for (let k = 0; k < grad.length; k++) grad[k] /= n;
+          for (let k = 0; k < state.weights.length; k++) {
+            state.weights[k] -= state.learningRate * grad[k];
+          }
+          state.lastGrad = grad;
+          const loss = sqErrSum / (2 * n);
+          state.lastDelta = (state.lastLoss === null) ? null : (state.lastLoss - loss);
+          state.lastLoss = loss;
+          state.epoch += 1;
+          state.lossHistory.push(loss);
+          if (state.lossHistory.length > 20000) state.lossHistory.shift();
+          return true;
+        }
 
-  const state = {
-    points: [],          // {x, y} in data space
-    degree: 3,
-    learningRate: 0.1,
-    epochsPerTick: 5,
-    convThreshold: 1e-6,
-    maxEpochs: 2000,
-    weights: [],          // length degree+1 ([w0, w1, ..., wd])
-    featMean: [],          // length degree (for x^1..x^d)
-    featStd: [],
-    epoch: 0,
-    lastLoss: null,
-    lastDelta: null,
-    lossHistory: [],
-    lastGrad: [],
-    isPlaying: false,
-    timer: null
-  };
+        function stepOnce() {
+          if (state.points.length === 0) { updateStatus('Add data first'); return; }
+          trainEpoch();
+          updateStatus('Idle');
+          renderAll();
+        }
 
-  // ---------------------------------------------------------------------
-  // DOM refs
-  // ---------------------------------------------------------------------
-  const dataCanvas = document.getElementById('dataCanvas');
-  const dctx = dataCanvas.getContext('2d');
-  const lossCanvas = document.getElementById('lossCanvas');
-  const lctx = lossCanvas.getContext('2d');
+        function playUntilConvergence() {
+          if (state.points.length === 0) { updateStatus('Add data first'); return; }
+          if (state.isPlaying) { stopPlaying(); return; }
+          state.isPlaying = true;
+          btnPlay.textContent = '⏸ Pause';
+          updateStatus('Training…');
+          state.timer = setInterval(() => {
+            let converged = false;
+            for (let i = 0; i < state.epochsPerTick; i++) {
+              trainEpoch();
+              if (state.epoch >= state.maxEpochs) { converged = true; break; }
+              if (state.lastDelta !== null && Math.abs(state.lastDelta) < state.convThreshold) { converged = true; break; }
+            }
+            renderAll();
+            if (converged) stopPlaying(true);
+          }, 60);
+        }
 
-  const el = id => document.getElementById(id);
-  const degreeInput = el('degree'), degreeVal = el('degreeVal');
-  const lrInput = el('lr'), lrVal = el('lrVal');
-  const epochsPerStepInput = el('epochsPerStep'), epochsPerStepVal = el('epochsPerStepVal');
-  const convThreshInput = el('convThresh'), convThreshVal = el('convThreshVal');
-  const maxEpochsInput = el('maxEpochs'), maxEpochsVal = el('maxEpochsVal');
+        function stopPlaying(converged) {
+          if (state.timer) { clearInterval(state.timer); state.timer = null; }
+          state.isPlaying = false;
+          btnPlay.textContent = '▶ Play until Convergence';
+          updateStatus(converged ? 'Converged ✓' : 'Idle');
+        }
 
-  const btnRandom = el('btnRandom'), btnClear = el('btnClear');
-  const btnStep = el('btnStep'), btnPlay = el('btnPlay'), btnReset = el('btnReset');
+        function updateStatus(text) { statusTag.textContent = text; }
 
-  const pointCountTag = el('pointCountTag'), statusTag = el('statusTag'), epochTag = el('epochTag'), lossTag = el('lossTag');
-  const statEpoch = el('statEpoch'), statLoss = el('statLoss'), statDelta = el('statDelta');
-  const equationBox = el('equationBox');
-  const weightTableBody = document.querySelector('#weightTable tbody');
-  const featureTable = el('featureTable');
+        // ---------------------------------------------------------------------
+        // Data editing
+        // ---------------------------------------------------------------------
+        function addOrRemovePoint(px, py) {
+          for (let i = 0; i < state.points.length; i++) {
+            const [qx, qy] = dataToPx(state.points[i].x, state.points[i].y);
+            const dist = Math.hypot(qx - px, qy - py);
+            if (dist <= CLICK_REMOVE_PX) {
+              state.points.splice(i, 1);
+              onDataChanged();
+              return;
+            }
+          }
+          const [x, y] = pxToData(px, py);
+          state.points.push({ x: clamp(x, X_MIN, X_MAX), y: clamp(y, Y_MIN, Y_MAX) });
+          onDataChanged();
+        }
 
-  // ---------------------------------------------------------------------
-  // Coordinate mapping: data space <-> canvas pixel space
-  // ---------------------------------------------------------------------
-  function dataToPx(x, y){
-    const w = dataCanvas.width, h = dataCanvas.height;
-    const px = (x - X_MIN) / (X_MAX - X_MIN) * w;
-    const py = h - (y - Y_MIN) / (Y_MAX - Y_MIN) * h;
-    return [px, py];
-  }
-  function pxToData(px, py){
-    const w = dataCanvas.width, h = dataCanvas.height;
-    const x = X_MIN + (px / w) * (X_MAX - X_MIN);
-    const y = Y_MIN + ((h - py) / h) * (Y_MAX - Y_MIN);
-    return [x, y];
-  }
+        function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-  // ---------------------------------------------------------------------
-  // Feature engineering: raw x -> standardized polynomial features
-  // ---------------------------------------------------------------------
-  function rawPolyFeatures(x, degree){
-    // returns [x^1, x^2, ..., x^degree]
-    const f = new Array(degree);
-    let p = 1;
-    for(let j=1;j<=degree;j++){ p *= x; f[j-1] = p; }
-    return f;
-  }
+        function randomizeData() {
+          state.points = [];
+          const n = 14 + Math.floor(Math.random() * 8);
+          const trueDeg = 1 + Math.floor(Math.random() * 3);
+          const trueCoeffs = new Array(trueDeg + 1).fill(0).map(() => (Math.random() * 2 - 1) * (trueDeg <= 1 ? 1.5 : 0.35));
+          for (let i = 0; i < n; i++) {
+            const x = X_MIN + Math.random() * (X_MAX - X_MIN);
+            let y = 0, p = 1;
+            for (let k = 0; k < trueCoeffs.length; k++) { y += trueCoeffs[k] * p; p *= x; }
+            y += (Math.random() * 2 - 1) * 0.8; // noise
+            state.points.push({ x, y: clamp(y, Y_MIN, Y_MAX) });
+          }
+          onDataChanged();
+        }
 
-  function recomputeFeatureStats(){
-    const d = state.degree;
-    const n = state.points.length;
-    state.featMean = new Array(d).fill(0);
-    state.featStd = new Array(d).fill(1);
-    if(n === 0) return;
-    const cols = new Array(d).fill(0).map(()=>[]);
-    for(const p of state.points){
-      const f = rawPolyFeatures(p.x, d);
-      for(let j=0;j<d;j++) cols[j].push(f[j]);
-    }
-    for(let j=0;j<d;j++){
-      const mean = cols[j].reduce((a,b)=>a+b,0)/n;
-      const variance = cols[j].reduce((a,b)=>a+(b-mean)*(b-mean),0)/n;
-      let std = Math.sqrt(variance);
-      if(std < 1e-8) std = 1;
-      state.featMean[j] = mean;
-      state.featStd[j] = std;
-    }
-  }
+        function clearData() {
+          state.points = [];
+          onDataChanged();
+        }
 
-  function standardizedFeatures(x){
-    // returns array length d of standardized x^1..x^d
-    const raw = rawPolyFeatures(x, state.degree);
-    const out = new Array(state.degree);
-    for(let j=0;j<state.degree;j++){
-      out[j] = (raw[j] - state.featMean[j]) / state.featStd[j];
-    }
-    return out;
-  }
+        function onDataChanged() {
+          resetTraining();
+        }
 
-  function predict(x){
-    const feats = standardizedFeatures(x);
-    let y = state.weights[0];
-    for(let j=0;j<feats.length;j++) y += state.weights[j+1]*feats[j];
-    return y;
-  }
+        // ---------------------------------------------------------------------
+        // Rendering
+        // ---------------------------------------------------------------------
+        function renderAll() {
+          renderDataCanvas();
+          renderModelState();
+          renderLossGraph();
+          pointCountTag.textContent = state.points.length + ' point' + (state.points.length === 1 ? '' : 's');
+          epochTag.textContent = 'Epoch ' + state.epoch;
+        }
 
-  // ---------------------------------------------------------------------
-  // Training: batch gradient descent, one epoch
-  // ---------------------------------------------------------------------
-  function resetTraining(){
-    stopPlaying();
-    recomputeFeatureStats();
-    state.weights = new Array(state.degree+1).fill(0);
-    state.lastGrad = new Array(state.degree+1).fill(0);
-    state.epoch = 0;
-    state.lastLoss = null;
-    state.lastDelta = null;
-    state.lossHistory = [];
-    updateStatus('Idle');
-    renderAll();
-  }
+        function renderDataCanvas() {
+          const w = dataCanvas.width, h = dataCanvas.height;
+          dctx.clearRect(0, 0, w, h);
 
-  function trainEpoch(){
-    const n = state.points.length;
-    if(n === 0) return false;
-    const d = state.degree;
-    const grad = new Array(d+1).fill(0);
-    let sqErrSum = 0;
-    for(const p of state.points){
-      const feats = standardizedFeatures(p.x);
-      let yhat = state.weights[0];
-      for(let j=0;j<d;j++) yhat += state.weights[j+1]*feats[j];
-      const err = yhat - p.y;
-      sqErrSum += err*err;
-      grad[0] += err;
-      for(let j=0;j<d;j++) grad[j+1] += err*feats[j];
-    }
-    for(let k=0;k<grad.length;k++) grad[k] /= n;
-    for(let k=0;k<state.weights.length;k++){
-      state.weights[k] -= state.learningRate * grad[k];
-    }
-    state.lastGrad = grad;
-    const loss = sqErrSum/(2*n);
-    state.lastDelta = (state.lastLoss === null) ? null : (state.lastLoss - loss);
-    state.lastLoss = loss;
-    state.epoch += 1;
-    state.lossHistory.push(loss);
-    if(state.lossHistory.length > 20000) state.lossHistory.shift();
-    return true;
-  }
+          // grid
+          dctx.strokeStyle = getCss('--grid-line');
+          dctx.lineWidth = 1;
+          for (let gx = Math.ceil(X_MIN); gx <= X_MAX; gx++) {
+            const [px] = dataToPx(gx, 0);
+            dctx.beginPath(); dctx.moveTo(px, 0); dctx.lineTo(px, h); dctx.stroke();
+          }
+          for (let gy = Math.ceil(Y_MIN); gy <= Y_MAX; gy++) {
+            const [, py] = dataToPx(0, gy);
+            dctx.beginPath(); dctx.moveTo(0, py); dctx.lineTo(w, py); dctx.stroke();
+          }
+          // axes
+          dctx.strokeStyle = '#3a3f4f';
+          dctx.lineWidth = 1.5;
+          const [ax0] = dataToPx(0, 0);
+          const [, ay0] = dataToPx(0, 0);
+          dctx.beginPath(); dctx.moveTo(ax0, 0); dctx.lineTo(ax0, h); dctx.stroke();
+          dctx.beginPath(); dctx.moveTo(0, ay0); dctx.lineTo(w, ay0); dctx.stroke();
 
-  function stepOnce(){
-    if(state.points.length === 0){ updateStatus('Add data first'); return; }
-    trainEpoch();
-    updateStatus('Idle');
-    renderAll();
-  }
+          // fitted curve
+          if (state.points.length > 0) {
+            dctx.strokeStyle = getCss('--accent-2');
+            dctx.lineWidth = 2.5;
+            dctx.setLineDash([6, 4]);
+            dctx.beginPath();
+            const steps = 200;
+            for (let i = 0; i <= steps; i++) {
+              const x = X_MIN + (X_MAX - X_MIN) * i / steps;
+              const y = clamp(predict(x), Y_MIN - 2, Y_MAX + 2);
+              const [px, py] = dataToPx(x, y);
+              if (i === 0) dctx.moveTo(px, py); else dctx.lineTo(px, py);
+            }
+            dctx.stroke();
+            dctx.setLineDash([]);
+          }
 
-  function playUntilConvergence(){
-    if(state.points.length === 0){ updateStatus('Add data first'); return; }
-    if(state.isPlaying){ stopPlaying(); return; }
-    state.isPlaying = true;
-    btnPlay.textContent = '⏸ Pause';
-    updateStatus('Training…');
-    state.timer = setInterval(()=>{
-      let converged = false;
-      for(let i=0;i<state.epochsPerTick;i++){
-        trainEpoch();
-        if(state.epoch >= state.maxEpochs){ converged = true; break; }
-        if(state.lastDelta !== null && Math.abs(state.lastDelta) < state.convThreshold){ converged = true; break; }
-      }
-      renderAll();
-      if(converged) stopPlaying(true);
-    }, 60);
-  }
+          // points
+          dctx.fillStyle = getCss('--accent');
+          for (const p of state.points) {
+            const [px, py] = dataToPx(p.x, p.y);
+            dctx.beginPath();
+            dctx.arc(px, py, 5, 0, Math.PI * 2);
+            dctx.fill();
+            dctx.strokeStyle = '#04211d';
+            dctx.lineWidth = 1;
+            dctx.stroke();
+          }
+        }
 
-  function stopPlaying(converged){
-    if(state.timer){ clearInterval(state.timer); state.timer = null; }
-    state.isPlaying = false;
-    btnPlay.textContent = '▶ Play until Convergence';
-    updateStatus(converged ? 'Converged ✓' : 'Idle');
-  }
+        function getCss(varName) {
+          return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
 
-  function updateStatus(text){ statusTag.textContent = text; }
+        function renderModelState() {
+          statEpoch.textContent = state.epoch;
+          statLoss.textContent = state.lastLoss === null ? '–' : state.lastLoss.toFixed(5);
+          statDelta.textContent = state.lastDelta === null ? '–' : state.lastDelta.toExponential(2);
 
-  // ---------------------------------------------------------------------
-  // Data editing
-  // ---------------------------------------------------------------------
-  function addOrRemovePoint(px, py){
-    for(let i=0;i<state.points.length;i++){
-      const [qx, qy] = dataToPx(state.points[i].x, state.points[i].y);
-      const dist = Math.hypot(qx-px, qy-py);
-      if(dist <= CLICK_REMOVE_PX){
-        state.points.splice(i,1);
-        onDataChanged();
-        return;
-      }
-    }
-    const [x, y] = pxToData(px, py);
-    state.points.push({x: clamp(x, X_MIN, X_MAX), y: clamp(y, Y_MIN, Y_MAX)});
-    onDataChanged();
-  }
+          // equation
+          let eq = 'ŷ = ' + fmt(state.weights[0] || 0);
+          for (let j = 1; j < state.weights.length; j++) {
+            const coef = state.weights[j] || 0;
+            eq += (coef >= 0 ? ' + ' : ' − ') + Math.abs(coef).toFixed(3) + '·x' + sup(j) + '<sub>std</sub>';
+          }
+          equationBox.innerHTML = eq;
 
-  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+          // weight table
+          weightTableBody.innerHTML = '';
+          for (let j = 0; j < state.weights.length; j++) {
+            const tr = document.createElement('tr');
+            const featLabel = j === 0 ? 'bias' : ('x' + sup(j));
+            const grad = state.lastGrad[j] !== undefined ? state.lastGrad[j] : 0;
+            tr.innerHTML = '<td class="' + (j === 0 ? 'bias-col' : '') + '">w' + sub(j) + '</td>' +
+              '<td>' + featLabel + '</td>' +
+              '<td>' + (state.weights[j] || 0).toFixed(4) + '</td>' +
+              '<td>' + grad.toFixed(4) + '</td>';
+            weightTableBody.appendChild(tr);
+          }
 
-  function randomizeData(){
-    state.points = [];
-    const n = 14 + Math.floor(Math.random()*8);
-    const trueDeg = 1 + Math.floor(Math.random()*3);
-    const trueCoeffs = new Array(trueDeg+1).fill(0).map(()=> (Math.random()*2-1) * (trueDeg <= 1 ? 1.5 : 0.35));
-    for(let i=0;i<n;i++){
-      const x = X_MIN + Math.random()*(X_MAX-X_MIN);
-      let y = 0, p = 1;
-      for(let k=0;k<trueCoeffs.length;k++){ y += trueCoeffs[k]*p; p *= x; }
-      y += (Math.random()*2-1) * 0.8; // noise
-      state.points.push({x, y: clamp(y, Y_MIN, Y_MAX)});
-    }
-    onDataChanged();
-  }
+          // feature matrix preview (first up to 5 rows)
+          const thead = featureTable.querySelector('thead');
+          const tbody = featureTable.querySelector('tbody');
+          let headHtml = '<tr><th class="bias-col">1 (bias)</th>';
+          for (let j = 1; j <= state.degree; j++) headHtml += '<th>x' + sup(j) + ' (std)</th>';
+          headHtml += '<th>y</th></tr>';
+          thead.innerHTML = headHtml;
 
-  function clearData(){
-    state.points = [];
-    onDataChanged();
-  }
+          const rows = state.points.slice(0, 5);
+          let bodyHtml = '';
+          for (const p of rows) {
+            const feats = state.points.length ? standardizedFeatures(p.x) : [];
+            bodyHtml += '<tr><td class="bias-col">1</td>';
+            for (let j = 0; j < state.degree; j++) bodyHtml += '<td>' + (feats[j] !== undefined ? feats[j].toFixed(3) : '-') + '</td>';
+            bodyHtml += '<td>' + p.y.toFixed(3) + '</td></tr>';
+          }
+          if (rows.length === 0) bodyHtml = '<tr><td colspan="' + (state.degree + 2) + '" style="color:var(--text-dim)">No data points yet</td></tr>';
+          else if (state.points.length > 5) bodyHtml += '<tr><td colspan="' + (state.degree + 2) + '" style="color:var(--text-dim)">… ' + (state.points.length - 5) + ' more row(s)</td></tr>';
+          tbody.innerHTML = bodyHtml;
+        }
 
-  function onDataChanged(){
-    resetTraining();
-  }
+        function sup(n) {
+          const map = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+          return String(n).split('').map(c => map[c] || c).join('');
+        }
+        function sub(n) {
+          const map = { 0: '₀', 1: '₁', 2: '₂', 3: '₃', 4: '₄', 5: '₅', 6: '₆', 7: '₇', 8: '₈', 9: '₉' };
+          return String(n).split('').map(c => map[c] || c).join('');
+        }
+        function fmt(v) { return v.toFixed(3); }
 
-  // ---------------------------------------------------------------------
-  // Rendering
-  // ---------------------------------------------------------------------
-  function renderAll(){
-    renderDataCanvas();
-    renderModelState();
-    renderLossGraph();
-    pointCountTag.textContent = state.points.length + ' point' + (state.points.length===1?'':'s');
-    epochTag.textContent = 'Epoch ' + state.epoch;
-  }
+        function renderLossGraph() {
+          const w = lossCanvas.width, h = lossCanvas.height;
+          lctx.clearRect(0, 0, w, h);
+          const pad = { l: 46, r: 14, t: 14, b: 26 };
+          const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
 
-  function renderDataCanvas(){
-    const w = dataCanvas.width, h = dataCanvas.height;
-    dctx.clearRect(0,0,w,h);
+          lctx.strokeStyle = getCss('--grid-line');
+          lctx.lineWidth = 1;
+          lctx.strokeRect(pad.l, pad.t, plotW, plotH);
 
-    // grid
-    dctx.strokeStyle = getCss('--grid-line');
-    dctx.lineWidth = 1;
-    for(let gx=Math.ceil(X_MIN); gx<=X_MAX; gx++){
-      const [px] = dataToPx(gx, 0);
-      dctx.beginPath(); dctx.moveTo(px,0); dctx.lineTo(px,h); dctx.stroke();
-    }
-    for(let gy=Math.ceil(Y_MIN); gy<=Y_MAX; gy++){
-      const [,py] = dataToPx(0, gy);
-      dctx.beginPath(); dctx.moveTo(0,py); dctx.lineTo(w,py); dctx.stroke();
-    }
-    // axes
-    dctx.strokeStyle = '#3a3f4f';
-    dctx.lineWidth = 1.5;
-    const [ax0] = dataToPx(0,0);
-    const [,ay0] = dataToPx(0,0);
-    dctx.beginPath(); dctx.moveTo(ax0,0); dctx.lineTo(ax0,h); dctx.stroke();
-    dctx.beginPath(); dctx.moveTo(0,ay0); dctx.lineTo(w,ay0); dctx.stroke();
+          const hist = state.lossHistory;
+          if (hist.length < 2) {
+            lctx.fillStyle = getCss('--text-dim');
+            lctx.font = '13px sans-serif';
+            lctx.fillText('Run Step or Play to see the loss curve', pad.l + 16, pad.t + plotH / 2);
+            lossTag.textContent = 'no training yet';
+            return;
+          }
+          lossTag.textContent = hist.length + ' epoch(s) · loss=' + hist[hist.length - 1].toExponential(2);
 
-    // fitted curve
-    if(state.points.length > 0){
-      dctx.strokeStyle = getCss('--accent-2');
-      dctx.lineWidth = 2.5;
-      dctx.setLineDash([6,4]);
-      dctx.beginPath();
-      const steps = 200;
-      for(let i=0;i<=steps;i++){
-        const x = X_MIN + (X_MAX-X_MIN)*i/steps;
-        const y = clamp(predict(x), Y_MIN-2, Y_MAX+2);
-        const [px, py] = dataToPx(x, y);
-        if(i===0) dctx.moveTo(px,py); else dctx.lineTo(px,py);
-      }
-      dctx.stroke();
-      dctx.setLineDash([]);
-    }
+          const maxLoss = Math.max(...hist);
+          const minLoss = Math.min(...hist);
+          const range = (maxLoss - minLoss) || 1;
 
-    // points
-    dctx.fillStyle = getCss('--accent');
-    for(const p of state.points){
-      const [px, py] = dataToPx(p.x, p.y);
-      dctx.beginPath();
-      dctx.arc(px, py, 5, 0, Math.PI*2);
-      dctx.fill();
-      dctx.strokeStyle = '#04211d';
-      dctx.lineWidth = 1;
-      dctx.stroke();
-    }
-  }
+          // y-axis labels (3 ticks)
+          lctx.fillStyle = getCss('--text-dim');
+          lctx.font = '10px sans-serif';
+          for (let i = 0; i <= 2; i++) {
+            const val = maxLoss - (range * i / 2);
+            const y = pad.t + plotH * i / 2;
+            lctx.fillText(val.toExponential(1), 2, y + 3);
+            lctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            lctx.beginPath(); lctx.moveTo(pad.l, y); lctx.lineTo(pad.l + plotW, y); lctx.stroke();
+          }
+          lctx.fillText('epoch ' + (hist.length - 1), pad.l + plotW - 46, h - 8);
+          lctx.fillText('0', pad.l, h - 8);
 
-  function getCss(varName){
-    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-  }
+          lctx.strokeStyle = getCss('--accent');
+          lctx.lineWidth = 2;
+          lctx.beginPath();
+          for (let i = 0; i < hist.length; i++) {
+            const x = pad.l + plotW * (i / (hist.length - 1));
+            const y = pad.t + plotH * (1 - (hist[i] - minLoss) / range);
+            if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
+          }
+          lctx.stroke();
+        }
 
-  function renderModelState(){
-    statEpoch.textContent = state.epoch;
-    statLoss.textContent = state.lastLoss === null ? '–' : state.lastLoss.toFixed(5);
-    statDelta.textContent = state.lastDelta === null ? '–' : state.lastDelta.toExponential(2);
+        // ---------------------------------------------------------------------
+        // Wiring
+        // ---------------------------------------------------------------------
+        dataCanvas.addEventListener('click', (e) => {
+          const rect = dataCanvas.getBoundingClientRect();
+          const scaleX = dataCanvas.width / rect.width;
+          const scaleY = dataCanvas.height / rect.height;
+          const px = (e.clientX - rect.left) * scaleX;
+          const py = (e.clientY - rect.top) * scaleY;
+          addOrRemovePoint(px, py);
+        });
 
-    // equation
-    let eq = 'ŷ = ' + fmt(state.weights[0] || 0);
-    for(let j=1;j<state.weights.length;j++){
-      const coef = state.weights[j] || 0;
-      eq += (coef>=0 ? ' + ' : ' − ') + Math.abs(coef).toFixed(3) + '·x' + sup(j) + '<sub>std</sub>';
-    }
-    equationBox.innerHTML = eq;
+        btnRandom.addEventListener('click', randomizeData);
+        btnClear.addEventListener('click', clearData);
+        btnStep.addEventListener('click', stepOnce);
+        btnPlay.addEventListener('click', playUntilConvergence);
+        btnReset.addEventListener('click', resetTraining);
 
-    // weight table
-    weightTableBody.innerHTML = '';
-    for(let j=0;j<state.weights.length;j++){
-      const tr = document.createElement('tr');
-      const featLabel = j===0 ? 'bias' : ('x' + sup(j));
-      const grad = state.lastGrad[j] !== undefined ? state.lastGrad[j] : 0;
-      tr.innerHTML = '<td class="' + (j===0?'bias-col':'') + '">w' + sub(j) + '</td>' +
-                     '<td>' + featLabel + '</td>' +
-                     '<td>' + (state.weights[j]||0).toFixed(4) + '</td>' +
-                     '<td>' + grad.toFixed(4) + '</td>';
-      weightTableBody.appendChild(tr);
-    }
+        degreeInput.addEventListener('input', () => {
+          state.degree = parseInt(degreeInput.value, 10);
+          degreeVal.textContent = state.degree;
+          resetTraining();
+        });
+        lrInput.addEventListener('input', () => {
+          const exp = parseFloat(lrInput.value);
+          state.learningRate = Math.pow(10, exp);
+          lrVal.textContent = state.learningRate.toFixed(3);
+        });
+        epochsPerStepInput.addEventListener('input', () => {
+          state.epochsPerTick = parseInt(epochsPerStepInput.value, 10);
+          epochsPerStepVal.textContent = state.epochsPerTick;
+        });
+        convThreshInput.addEventListener('input', () => {
+          const exp = parseFloat(convThreshInput.value);
+          state.convThreshold = Math.pow(10, exp);
+          convThreshVal.textContent = state.convThreshold.toExponential(0);
+        });
+        maxEpochsInput.addEventListener('input', () => {
+          state.maxEpochs = parseInt(maxEpochsInput.value, 10);
+          maxEpochsVal.textContent = state.maxEpochs;
+        });
 
-    // feature matrix preview (first up to 5 rows)
-    const thead = featureTable.querySelector('thead');
-    const tbody = featureTable.querySelector('tbody');
-    let headHtml = '<tr><th class="bias-col">1 (bias)</th>';
-    for(let j=1;j<=state.degree;j++) headHtml += '<th>x' + sup(j) + ' (std)</th>';
-    headHtml += '<th>y</th></tr>';
-    thead.innerHTML = headHtml;
+        // ---------------------------------------------------------------------
+        // Init
+        // ---------------------------------------------------------------------
+        state.learningRate = Math.pow(10, parseFloat(lrInput.value));
+        state.epochsPerTick = parseInt(epochsPerStepInput.value, 10);
+        state.convThreshold = Math.pow(10, parseFloat(convThreshInput.value));
+        state.maxEpochs = parseInt(maxEpochsInput.value, 10);
+        state.degree = parseInt(degreeInput.value, 10);
 
-    const rows = state.points.slice(0, 5);
-    let bodyHtml = '';
-    for(const p of rows){
-      const feats = state.points.length ? standardizedFeatures(p.x) : [];
-      bodyHtml += '<tr><td class="bias-col">1</td>';
-      for(let j=0;j<state.degree;j++) bodyHtml += '<td>' + (feats[j]!==undefined?feats[j].toFixed(3):'-') + '</td>';
-      bodyHtml += '<td>' + p.y.toFixed(3) + '</td></tr>';
-    }
-    if(rows.length === 0) bodyHtml = '<tr><td colspan="' + (state.degree+2) + '" style="color:var(--text-dim)">No data points yet</td></tr>';
-    else if(state.points.length > 5) bodyHtml += '<tr><td colspan="' + (state.degree+2) + '" style="color:var(--text-dim)">… ' + (state.points.length-5) + ' more row(s)</td></tr>';
-    tbody.innerHTML = bodyHtml;
-  }
-
-  function sup(n){
-    const map = {0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'};
-    return String(n).split('').map(c=>map[c]||c).join('');
-  }
-  function sub(n){
-    const map = {0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',5:'₅',6:'₆',7:'₇',8:'₈',9:'₉'};
-    return String(n).split('').map(c=>map[c]||c).join('');
-  }
-  function fmt(v){ return v.toFixed(3); }
-
-  function renderLossGraph(){
-    const w = lossCanvas.width, h = lossCanvas.height;
-    lctx.clearRect(0,0,w,h);
-    const pad = {l:46, r:14, t:14, b:26};
-    const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
-
-    lctx.strokeStyle = getCss('--grid-line');
-    lctx.lineWidth = 1;
-    lctx.strokeRect(pad.l, pad.t, plotW, plotH);
-
-    const hist = state.lossHistory;
-    if(hist.length < 2){
-      lctx.fillStyle = getCss('--text-dim');
-      lctx.font = '13px sans-serif';
-      lctx.fillText('Run Step or Play to see the loss curve', pad.l+16, pad.t + plotH/2);
-      lossTag.textContent = 'no training yet';
-      return;
-    }
-    lossTag.textContent = hist.length + ' epoch(s) · loss=' + hist[hist.length-1].toExponential(2);
-
-    const maxLoss = Math.max(...hist);
-    const minLoss = Math.min(...hist);
-    const range = (maxLoss - minLoss) || 1;
-
-    // y-axis labels (3 ticks)
-    lctx.fillStyle = getCss('--text-dim');
-    lctx.font = '10px sans-serif';
-    for(let i=0;i<=2;i++){
-      const val = maxLoss - (range*i/2);
-      const y = pad.t + plotH*i/2;
-      lctx.fillText(val.toExponential(1), 2, y+3);
-      lctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      lctx.beginPath(); lctx.moveTo(pad.l, y); lctx.lineTo(pad.l+plotW, y); lctx.stroke();
-    }
-    lctx.fillText('epoch ' + (hist.length-1), pad.l+plotW-46, h-8);
-    lctx.fillText('0', pad.l, h-8);
-
-    lctx.strokeStyle = getCss('--accent');
-    lctx.lineWidth = 2;
-    lctx.beginPath();
-    for(let i=0;i<hist.length;i++){
-      const x = pad.l + plotW * (i/(hist.length-1));
-      const y = pad.t + plotH * (1 - (hist[i]-minLoss)/range);
-      if(i===0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
-    }
-    lctx.stroke();
-  }
-
-  // ---------------------------------------------------------------------
-  // Wiring
-  // ---------------------------------------------------------------------
-  dataCanvas.addEventListener('click', (e)=>{
-    const rect = dataCanvas.getBoundingClientRect();
-    const scaleX = dataCanvas.width / rect.width;
-    const scaleY = dataCanvas.height / rect.height;
-    const px = (e.clientX - rect.left) * scaleX;
-    const py = (e.clientY - rect.top) * scaleY;
-    addOrRemovePoint(px, py);
-  });
-
-  btnRandom.addEventListener('click', randomizeData);
-  btnClear.addEventListener('click', clearData);
-  btnStep.addEventListener('click', stepOnce);
-  btnPlay.addEventListener('click', playUntilConvergence);
-  btnReset.addEventListener('click', resetTraining);
-
-  degreeInput.addEventListener('input', ()=>{
-    state.degree = parseInt(degreeInput.value, 10);
-    degreeVal.textContent = state.degree;
-    resetTraining();
-  });
-  lrInput.addEventListener('input', ()=>{
-    const exp = parseFloat(lrInput.value);
-    state.learningRate = Math.pow(10, exp);
-    lrVal.textContent = state.learningRate.toFixed(3);
-  });
-  epochsPerStepInput.addEventListener('input', ()=>{
-    state.epochsPerTick = parseInt(epochsPerStepInput.value, 10);
-    epochsPerStepVal.textContent = state.epochsPerTick;
-  });
-  convThreshInput.addEventListener('input', ()=>{
-    const exp = parseFloat(convThreshInput.value);
-    state.convThreshold = Math.pow(10, exp);
-    convThreshVal.textContent = state.convThreshold.toExponential(0);
-  });
-  maxEpochsInput.addEventListener('input', ()=>{
-    state.maxEpochs = parseInt(maxEpochsInput.value, 10);
-    maxEpochsVal.textContent = state.maxEpochs;
-  });
-
-  // ---------------------------------------------------------------------
-  // Init
-  // ---------------------------------------------------------------------
-  state.learningRate = Math.pow(10, parseFloat(lrInput.value));
-  state.epochsPerTick = parseInt(epochsPerStepInput.value, 10);
-  state.convThreshold = Math.pow(10, parseFloat(convThreshInput.value));
-  state.maxEpochs = parseInt(maxEpochsInput.value, 10);
-  state.degree = parseInt(degreeInput.value, 10);
-
-  randomizeData();
-})();
-</script>
+        randomizeData();
+      })();
+  </script>
 </body>
+
 </html>
