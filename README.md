@@ -4,7 +4,8 @@ An interactive single-page web application for learning how Polynomial Regressio
 
 ## Features
 
-- Generate random datasets or add and remove points manually.
+- Generate random datasets, click to add/erase points, or spray points in and out with an adjustable brush.
+- Left and right panels scroll independently.
 - Adjust the polynomial degree and training parameters.
 - Train the model one step at a time or until convergence.
 - View the fitted curve, model state, feature matrix, and loss graph.
@@ -34,17 +35,16 @@ GitHub Pages will publish the site automatically after the workflow completes.
 ```text
 .
 index.html
-project.md
 .github/workflows/deploy-pages.yml
 ```
 
-See [`project.md`](./project.md) for the full project specification.
-
 ## Group
 
-- Member 1
-- Member 2
-- Member 3
-- Member 4
+- 66010118
+- 66010452
+- 66010737
+- 66010808
+- 66010911
+- 66011365
 
 CE KMITL - Department of Computer Engineering
